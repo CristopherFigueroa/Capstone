@@ -1,19 +1,11 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import api from "@/src/services/api";
 import { useCart } from "@/src/context/CartContext";
-import {
-  nuevaClave,
-  mensajeError,
-} from "@/src/utils/solicitudes";
+import { nuevaClave, mensajeError } from "@/src/utils/solicitudes";
 import BotonPago from "./BotonPago";
 
 const COMUNAS_COBERTURA = [
@@ -40,8 +32,7 @@ const fecha = valor =>
 const boton =
   "border rounded-lg px-4 py-2 bg-slate-800 text-white disabled:opacity-40";
 
-const campo =
-  "border rounded p-2 w-full bg-white text-gray-900";
+const campo = "border rounded p-2 w-full bg-white text-gray-900";
 
 const siguientes = {
   pendiente: ["confirmado", "cancelado"],
@@ -49,9 +40,7 @@ const siguientes = {
   enviado: ["entregado"],
 };
 
-export default function PanelGestionSolar({
-  vista = "cotizador",
-}) {
+export default function PanelGestionSolar({ vista = "cotizador" }) {
   const { carrito, agregarAlCarrito } = useCart();
 
   const [perfil, setPerfil] = useState(null);
@@ -136,16 +125,12 @@ export default function PanelGestionSolar({
     }
 
     if (vista === "pedidos") {
-      setPedidos(
-        (await api.get("/pedidos/mis-pedidos")).data
-      );
+      setPedidos((await api.get("/pedidos/mis-pedidos")).data);
     }
 
     if (vista === "agenda") {
       const ruta =
-        p.rol_id === 1
-          ? "/agenda/"
-          : "/agenda/mis-citas";
+        p.rol_id === 1 ? "/agenda/" : "/agenda/mis-citas";
 
       setCitas((await api.get(ruta)).data);
     }
@@ -173,13 +158,10 @@ export default function PanelGestionSolar({
     };
 
     refrescar();
-
     window.addEventListener("auth-change", refrescar);
 
     const timer =
-      vista === "agenda"
-        ? setInterval(refrescar, 15000)
-        : null;
+      vista === "agenda" ? setInterval(refrescar, 15000) : null;
 
     return () => {
       window.removeEventListener("auth-change", refrescar);
@@ -190,11 +172,7 @@ export default function PanelGestionSolar({
     };
   }, [cargar, vista, mostrarError]);
 
-  async function ejecutar(
-    funcion,
-    mensaje = "",
-    refrescar = true
-  ) {
+  async function ejecutar(funcion, mensaje = "", refrescar = true) {
     if (bloqueo.current) return;
 
     bloqueo.current = true;
@@ -228,7 +206,6 @@ export default function PanelGestionSolar({
       [nombre]: valor,
     }));
 
-    // El resultado anterior corresponde a otros datos.
     setResultado(null);
     setGuardada(null);
     setError("");
@@ -244,7 +221,7 @@ export default function PanelGestionSolar({
     if (existe) {
       setError(
         "Ese kit ya está en el carrito. " +
-        "Retíralo antes de añadir esta cotización."
+          "Retíralo antes de añadir esta cotización."
       );
       return;
     }
@@ -303,8 +280,7 @@ export default function PanelGestionSolar({
         setResultado(null);
         setGuardada(null);
 
-        // Reutiliza la clave si se reintentan los mismos datos.
-        // Así, una respuesta perdida no genera otro registro.
+        // Reutiliza la clave al reintentar los mismos datos.
         if (
           !solicitud.current ||
           JSON.stringify(solicitud.current.datos) !==
@@ -316,8 +292,7 @@ export default function PanelGestionSolar({
           };
         }
 
-        // El backend recomienda el kit y guarda la cotización
-        // en una sola operación.
+        // Recomienda y guarda en una sola operación.
         const { data } = await api.post(
           "/cotizaciones/guardar",
           solicitud.current
@@ -544,12 +519,36 @@ export default function PanelGestionSolar({
 
               <button
                 type="submit"
-                className={boton}
+                className={`${boton} inline-flex items-center justify-center gap-2 disabled:cursor-wait`}
                 disabled={ocupado}
+                aria-busy={ocupado}
               >
-                {ocupado
-                  ? "Calculando y guardando..."
-                  : "Recomendar y guardar kit"}
+                {ocupado && (
+                  <svg
+                    className="h-5 w-5 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                )}
+
+                <span aria-live="polite">
+                  {ocupado ? "Cotizando…" : "Recomendar"}
+                </span>
               </button>
             </fieldset>
           </form>
@@ -589,11 +588,9 @@ export default function PanelGestionSolar({
               </p>
 
               <ul>
-                {(resultado.advertencias || []).map(
-                  advertencia => (
-                    <li key={advertencia}>• {advertencia}</li>
-                  )
-                )}
+                {(resultado.advertencias || []).map(advertencia => (
+                  <li key={advertencia}>• {advertencia}</li>
+                ))}
               </ul>
 
               <div className="flex flex-wrap gap-3">
@@ -610,9 +607,7 @@ export default function PanelGestionSolar({
                   type="button"
                   className={boton}
                   disabled={ocupado}
-                  onClick={() =>
-                    agregar(resultado, guardada?.id)
-                  }
+                  onClick={() => agregar(resultado, guardada?.id)}
                 >
                   Añadir al carrito
                 </button>
@@ -642,11 +637,7 @@ export default function PanelGestionSolar({
             className={boton}
             disabled={ocupado}
             onClick={() =>
-              ejecutar(
-                cargar,
-                "Cotizaciones actualizadas.",
-                false
-              )
+              ejecutar(cargar, "Cotizaciones actualizadas.", false)
             }
           >
             {ocupado ? "Actualizando..." : "Actualizar lista"}
@@ -687,10 +678,7 @@ export default function PanelGestionSolar({
                     type="button"
                     className={boton}
                     onClick={() =>
-                      agregar(
-                        cotizacion.resultado,
-                        cotizacion.id
-                      )
+                      agregar(cotizacion.resultado, cotizacion.id)
                     }
                   >
                     Añadir kit al carrito
@@ -736,13 +724,11 @@ export default function PanelGestionSolar({
                 disabled={ocupado}
                 className="space-y-3 border p-4 rounded"
               >
-                {opcionesTurno(
-                  reserva.turno_id,
-                  valor =>
-                    setReserva(anterior => ({
-                      ...anterior,
-                      turno_id: valor,
-                    }))
+                {opcionesTurno(reserva.turno_id, valor =>
+                  setReserva(anterior => ({
+                    ...anterior,
+                    turno_id: valor,
+                  }))
                 )}
 
                 {["direccion", "comuna", "telefono"].map(key => (
@@ -857,9 +843,7 @@ export default function PanelGestionSolar({
                       onClick={() =>
                         ejecutar(
                           () =>
-                            api.put(
-                              `/agenda/${cita.id}/cancelar`
-                            ),
+                            api.put(`/agenda/${cita.id}/cancelar`),
                           "Cita cancelada."
                         )
                       }
@@ -886,9 +870,7 @@ export default function PanelGestionSolar({
                             api.put(
                               `/agenda/${cita.id}/reprogramar`,
                               {
-                                turno_id: Number(
-                                  destinos[cita.id]
-                                ),
+                                turno_id: Number(destinos[cita.id]),
                               }
                             ),
                           "Cita reprogramada."
@@ -925,14 +907,8 @@ export default function PanelGestionSolar({
             <>
               <div className="grid md:grid-cols-3 gap-3">
                 {[
-                  [
-                    "Ventas entregadas",
-                    pesos(stats.total_ingresos),
-                  ],
-                  [
-                    "Costos registrados",
-                    pesos(stats.costos_registrados),
-                  ],
+                  ["Ventas entregadas", pesos(stats.total_ingresos)],
+                  ["Costos registrados", pesos(stats.costos_registrados)],
                   ["Margen bruto", pesos(stats.margen_bruto)],
                   ["Pedidos", stats.total_pedidos],
                   ["Cotizaciones", stats.total_cotizaciones],
@@ -989,10 +965,7 @@ export default function PanelGestionSolar({
               <option value="">Producto</option>
 
               {productos.map(producto => (
-                <option
-                  value={producto.id}
-                  key={producto.id}
-                >
+                <option value={producto.id} key={producto.id}>
                   {producto.nombre}
                 </option>
               ))}
@@ -1042,8 +1015,7 @@ export default function PanelGestionSolar({
                 #{cotizacion.id}
                 {" · "}Cliente {cotizacion.usuario_id}
                 {" · "}
-                {cotizacion.resultado?.nombre ||
-                  "Registro anterior"}
+                {cotizacion.resultado?.nombre || "Registro anterior"}
               </p>
 
               <p>
@@ -1136,33 +1108,31 @@ export default function PanelGestionSolar({
 
               {vista === "admin" && (
                 <div className="flex gap-2">
-                  {(siguientes[pedido.estado] || []).map(
-                    estado => (
-                      <button
-                        type="button"
-                        key={estado}
-                        disabled={ocupado}
-                        className={boton}
-                        onClick={() =>
-                          ejecutar(
-                            () =>
-                              api.put(
-                                `/pedidos/${pedido.id}`,
-                                null,
-                                {
-                                  params: {
-                                    nuevo_estado: estado,
-                                  },
-                                }
-                              ),
-                            "Pedido actualizado."
-                          )
-                        }
-                      >
-                        {estado}
-                      </button>
-                    )
-                  )}
+                  {(siguientes[pedido.estado] || []).map(estado => (
+                    <button
+                      type="button"
+                      key={estado}
+                      disabled={ocupado}
+                      className={boton}
+                      onClick={() =>
+                        ejecutar(
+                          () =>
+                            api.put(
+                              `/pedidos/${pedido.id}`,
+                              null,
+                              {
+                                params: {
+                                  nuevo_estado: estado,
+                                },
+                              }
+                            ),
+                          "Pedido actualizado."
+                        )
+                      }
+                    >
+                      {estado}
+                    </button>
+                  ))}
                 </div>
               )}
             </article>
