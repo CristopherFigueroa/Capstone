@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import update
+from sqlalchemy import text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -257,6 +257,16 @@ def crear_pedido(
                 "El pedido supera el monto admitido.",
             )
 
+        # Sincronizar secuencias de PostgreSQL por si existen registros previos con ID manual
+        if db.bind and db.bind.dialect.name == "postgresql":
+            for tabla in ("pedidos", "detalle_pedidos"):
+                db.execute(
+                    text(
+                        f"SELECT setval(pg_get_serial_sequence('{tabla}', 'id'), "
+                        f"COALESCE((SELECT MAX(id) FROM {tabla}), 1), true)"
+                    )
+                )
+
         pedido = models.Pedido(
             usuario_id=user.id,
             monto_total=total,
@@ -354,33 +364,37 @@ def cambiar_estado(
 
     registro = db.get(PedidoRegistro, pedido_id)
 
-    if registro is None:
-        raise HTTPException(
-            409,
-            "Pedido anterior sin registro de stock. "
-            "Requiere conciliación manual.",
-        )
-
     if pedido.estado == nuevo_estado:
         return resumen(pedido, db)
 
     permitidos = {
-        "pendiente": {"confirmado", "cancelado"},
-        "confirmado": {"enviado", "cancelado"},
-        "enviado": {"entregado"},
+        "pendiente": {"confirmado", "enviado", "entregado", "cancelado"},
+        "confirmado": {"enviado", "entregado", "cancelado"},
+        "enviado": {"entregado", "cancelado"},
         "entregado": set(),
         "cancelado": set(),
     }
 
-    if nuevo_estado not in permitidos.get(pedido.estado, set()):
+    if nuevo_estado not in permitidos.get(pedido.estado, {"confirmado", "enviado", "entregado", "cancelado"}):
         raise HTTPException(
             409,
             "Transición de estado no permitida.",
         )
 
     if nuevo_estado == "cancelado":
+        partidas_cancelar = (
+            registro.partidas
+            if registro is not None
+            else [
+                {
+                    "producto_id": d.producto_id,
+                    "cantidad": d.cantidad,
+                }
+                for d in pedido.detalles
+            ]
+        )
         for item in sorted(
-            registro.partidas,
+            partidas_cancelar,
             key=lambda fila: fila["producto_id"],
         ):
             db.execute(

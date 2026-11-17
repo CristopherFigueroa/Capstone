@@ -42,9 +42,9 @@ for router in [
     pedidos.router,
     agenda.router,
     ia.router,
+    pagos.router,
 ]:
     app.include_router(router)
-    app.include_router(pagos.router)
 
 
 @app.get("/")

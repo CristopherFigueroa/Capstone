@@ -58,7 +58,7 @@ export default function CartSidebar({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Lista de Productos (Con Scroll) */}
+        {/* Lista de Productos */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 bg-gray-50/50">
           {carrito.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
@@ -73,14 +73,18 @@ export default function CartSidebar({ isOpen, onClose }) {
               </Link>
             </div>
           ) : (
-            carrito.map((item) => (
+            carrito.map((item) => {
+              const imagenSrc = item.imagen_url || item.imagen || "/panel-solar.png";
+              return (
               <div key={item.id} className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex gap-4 relative group">
                 <div className="w-20 h-20 bg-slate-50 rounded-xl relative shrink-0 border border-gray-100 overflow-hidden flex items-center justify-center">
-                  {item.imagen ? (
-                    <Image src={item.imagen} alt={item.nombre} fill sizes="80px" className="object-contain p-2" />
-                  ) : (
-                    <span className="text-xs text-gray-400">Sin foto</span>
-                  )}
+                  <Image
+                    src={imagenSrc}
+                    alt={item.nombre}
+                    fill
+                    sizes="80px"
+                    className="object-contain p-2"
+                  />
                 </div>
                 <div className="flex-1 flex flex-col justify-between py-1">
                   <div>
@@ -97,7 +101,8 @@ export default function CartSidebar({ isOpen, onClose }) {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                 </button>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 

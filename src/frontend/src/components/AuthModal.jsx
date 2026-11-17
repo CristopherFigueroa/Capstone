@@ -1,8 +1,19 @@
 "use client";
 
+import { useState } from "react";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuthForm } from "@/src/hooks/useAuthForm";
+import { authService } from "@/src/services/api";
+import { mensajeError } from "@/src/utils/solicitudes";
 
 export default function AuthModal({ isOpen, onClose }) {
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [modoRecuperacion, setModoRecuperacion] = useState(false);
+  const [emailRecuperacion, setEmailRecuperacion] = useState("");
+  const [enviadoRecuperacion, setEnviadoRecuperacion] = useState(false);
+  const [cargandoRecuperacion, setCargandoRecuperacion] = useState(false);
+  const [mensajeRecuperacion, setMensajeRecuperacion] = useState({ text: "", type: "" });
+
   const {
     isLogin,
     formData,
@@ -17,6 +28,49 @@ export default function AuthModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const abrirRecuperacion = () => {
+    setEmailRecuperacion(formData.email || "");
+    setEnviadoRecuperacion(false);
+    setMensajeRecuperacion({ text: "", type: "" });
+    setModoRecuperacion(true);
+  };
+
+  const cerrarRecuperacion = () => {
+    setModoRecuperacion(false);
+    setEnviadoRecuperacion(false);
+    setMensajeRecuperacion({ text: "", type: "" });
+  };
+
+  const handleSolicitarCodigo = async (e) => {
+    e.preventDefault();
+    const correo = emailRecuperacion.trim();
+    if (!correo) {
+      setMensajeRecuperacion({ text: "Ingresa tu correo electrónico.", type: "error" });
+      return;
+    }
+
+    setCargandoRecuperacion(true);
+    setMensajeRecuperacion({ text: "", type: "" });
+    try {
+      const res = await authService.solicitarRecuperacion(correo);
+      setEnviadoRecuperacion(true);
+      setMensajeRecuperacion({
+        text:
+          res?.detail ||
+          "Si el correo está registrado, recibirás un mensaje con las instrucciones para restablecer tu contraseña.",
+        type: "success",
+      });
+    } catch (err) {
+      const detalle =
+        err?.response || err?.request
+          ? mensajeError(err)
+          : err?.message || "No se pudo procesar la solicitud.";
+      setMensajeRecuperacion({ text: detalle, type: "error" });
+    } finally {
+      setCargandoRecuperacion(false);
+    }
+  };
+
   return (
     <>
       <div 
@@ -30,7 +84,11 @@ export default function AuthModal({ isOpen, onClose }) {
         <div className="p-8">
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-3xl font-extrabold text-[#0F2547]">
-              {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
+              {modoRecuperacion
+                ? "Recuperar Contraseña"
+                : isLogin
+                  ? "Iniciar Sesión"
+                  : "Crear Cuenta"}
             </h2>
             <button 
               onClick={onClose}
@@ -40,6 +98,60 @@ export default function AuthModal({ isOpen, onClose }) {
             </button>
           </div>
 
+          {modoRecuperacion ? (
+            <form onSubmit={handleSolicitarCodigo} className="flex flex-col gap-4">
+              <p className="text-sm text-gray-600">
+                Ingresa tu correo electrónico y te enviaremos las instrucciones para restablecer tu contraseña.
+              </p>
+
+              <div className="form-control">
+                <label className="label py-1">
+                  <span className="label-text font-bold text-gray-600">Correo Electrónico</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  disabled={enviadoRecuperacion}
+                  value={emailRecuperacion}
+                  onChange={(e) => setEmailRecuperacion(e.target.value)}
+                  placeholder="tu@correo.com"
+                  maxLength={120}
+                  className="input bg-gray-50 text-black w-full border-gray-200 focus:border-[#00fc82] outline-none disabled:opacity-60"
+                />
+              </div>
+
+              {!enviadoRecuperacion && (
+                <button
+                  type="submit"
+                  disabled={cargandoRecuperacion}
+                  className="btn w-full bg-[#0F2547] text-white hover:bg-[#00fc82] hover:text-[#0F2547] border-none font-bold mt-2 shadow-lg shadow-blue-900/20 disabled:opacity-50"
+                >
+                  {cargandoRecuperacion ? "Enviando..." : "Enviar correo de recuperación"}
+                </button>
+              )}
+
+              {mensajeRecuperacion.text && (
+                <div
+                  className={`p-3 rounded-lg text-sm font-semibold text-center ${
+                    mensajeRecuperacion.type === "success"
+                      ? "bg-green-100 text-green-800 border border-green-200"
+                      : "bg-red-100 text-red-800 border border-red-200"
+                  }`}
+                >
+                  {mensajeRecuperacion.text}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={cerrarRecuperacion}
+                className="text-sm font-bold text-[#0F2547] hover:text-[#00B4D8] mt-2 cursor-pointer"
+              >
+                ← Volver a Iniciar Sesión
+              </button>
+            </form>
+          ) : (
+          <>
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
             {!isLogin && (
               <div className="form-control">
@@ -92,16 +204,30 @@ export default function AuthModal({ isOpen, onClose }) {
 
             <div className="form-control">
               <label className="label py-1"><span className="label-text font-bold text-gray-600">Contraseña</span></label>
-              <input 
-                type="password" 
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="••••••••" 
-                maxLength={128}
-                className={`input bg-gray-50 text-black w-full outline-none transition-colors ${getFieldClasses("password")}`}
-              />
+              <div className="relative">
+                <input 
+                  type={mostrarPassword ? "text" : "password"} 
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="••••••••" 
+                  maxLength={128}
+                  className={`input bg-gray-50 text-black w-full pr-11 outline-none transition-colors ${getFieldClasses("password")}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarPassword((prev) => !prev)}
+                  aria-label={mostrarPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0F2547] transition-colors cursor-pointer p-1"
+                >
+                  {mostrarPassword ? (
+                    <FiEyeOff className="w-5 h-5" />
+                  ) : (
+                    <FiEye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.password && <span className="text-red-500 text-xs mt-1 font-semibold">{errors.password}</span>}
               
               {!isLogin && (
@@ -121,7 +247,13 @@ export default function AuthModal({ isOpen, onClose }) {
 
             {isLogin && (
               <div className="flex justify-end">
-                <a href="#" className="text-sm text-gray-500 hover:text-[#00fc82] transition-colors">¿Olvidaste tu contraseña?</a>
+                <button
+                  type="button"
+                  onClick={abrirRecuperacion}
+                  className="text-sm text-gray-500 hover:text-[#00fc82] transition-colors cursor-pointer"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
               </div>
             )}
 
@@ -152,6 +284,8 @@ export default function AuthModal({ isOpen, onClose }) {
               {isLogin ? "Regístrate aquí" : "Inicia sesión"}
             </button>
           </div>
+          </>
+          )}
         </div>
       </div>
     </>

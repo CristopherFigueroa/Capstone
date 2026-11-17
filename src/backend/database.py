@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from core.database import Base, SessionLocal, engine, get_db
 
-# Se agregó +psycopg2 para que coincida con tu requirements.txt
+
 SQLALCHEMY_DATABASE_URL = "postgresql://neondb_owner:npg_dpW0xoNCE3KV@ep-aged-wave-b67ipotj-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

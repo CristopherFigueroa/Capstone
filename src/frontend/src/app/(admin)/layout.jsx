@@ -2,14 +2,24 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import NotFound from '@/src/app/not-found';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isDenied, setIsDenied] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
+
+  const linkClass = (href) => {
+    const activo = pathname === href;
+    return `block px-4 py-3 rounded-xl transition-all ${
+      activo
+        ? "bg-[#00fc82] text-[#0F2547] font-bold shadow-md"
+        : "text-white font-medium hover:bg-[#00fc82]/20 hover:text-[#00fc82]"
+    }`;
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -134,23 +144,37 @@ export default function AdminLayout({ children }) {
             <Link
               href="/admin"
               onClick={() => setMenuAbierto(false)}
-              className="block px-4 py-3 rounded-xl font-medium hover:bg-[#00fc82] hover:text-[#0F2547] transition-all"
+              className={linkClass("/admin")}
             >
               Dashboard
             </Link>
             <Link
               href="/admin/crud"
               onClick={() => setMenuAbierto(false)}
-              className="block px-4 py-3 rounded-xl font-medium hover:bg-[#00fc82] hover:text-[#0F2547] transition-all"
+              className={linkClass("/admin/crud")}
             >
               Inventario (CRUD)
             </Link>
             <Link
+              href="/admin/pedidos"
+              onClick={() => setMenuAbierto(false)}
+              className={linkClass("/admin/pedidos")}
+            >
+              Ventas / Pedidos
+            </Link>
+            <Link
               href="/admin/cotizaciones"
               onClick={() => setMenuAbierto(false)}
-              className="block px-4 py-3 rounded-xl font-medium hover:bg-[#00fc82] hover:text-[#0F2547] transition-all"
+              className={linkClass("/admin/cotizaciones")}
             >
               Cotizaciones
+            </Link>
+            <Link
+              href="/admin/agenda"
+              onClick={() => setMenuAbierto(false)}
+              className={linkClass("/admin/agenda")}
+            >
+              Agenda Técnica
             </Link>
           </nav>
         </div>

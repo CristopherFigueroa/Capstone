@@ -49,7 +49,9 @@ export const validateAuthField = (name, value, isLogin = false) => {
   
   if (name === "email") {
     if (!value) error = "El correo es obligatorio";
-    else if (!/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(value)) error = "Formato de correo electrónico inválido";
+    else if (!isLogin && !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(value)) {
+      error = "Formato de correo electrónico inválido";
+    }
   }
   
   if (name === "telefono" && value && !isLogin) {
@@ -58,8 +60,7 @@ export const validateAuthField = (name, value, isLogin = false) => {
   
   if (name === "password") {
     if (!value) error = "La contraseña es obligatoria";
-    else if (!value) error = "La contraseña es obligatoria";
-    else if (value.length < 9) error = "La contraseña debe tener mínimo 9 caracteres";
+    else if (!isLogin && value.length < 9) error = "La contraseña debe tener mínimo 9 caracteres";
     else if (!isLogin && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{9,128}$/.test(value)) {
       error = "La contraseña no cumple los requisitos de seguridad";
     }

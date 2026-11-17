@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -21,9 +22,11 @@ def crear_usuario(
     usuario: schemas.UsuarioCreate,
     db: Session = Depends(get_db),
 ):
+    email_limpio = usuario.email.strip().lower()
+
     existente = (
         db.query(models.Usuario)
-        .filter(models.Usuario.email == usuario.email)
+        .filter(models.Usuario.email == email_limpio)
         .first()
     )
 
@@ -33,11 +36,16 @@ def crear_usuario(
             "El correo ya está registrado.",
         )
 
+    # Asegurar que exista el rol Cliente (id=2)
+    if db.get(models.Rol, 2) is None:
+        db.add(models.Rol(id=2, nombre="Cliente"))
+        db.commit()
+
     nuevo = models.Usuario(
-        nombre=usuario.nombre,
-        email=usuario.email,
+        nombre=usuario.nombre.strip(),
+        email=email_limpio,
         password_hash=get_password_hash(usuario.password),
-        telefono=usuario.telefono,
+        telefono=usuario.telefono.strip() if usuario.telefono else None,
         rol_id=2,
     )
 
@@ -47,6 +55,28 @@ def crear_usuario(
         db.refresh(nuevo)
     except IntegrityError as error:
         db.rollback()
+        err_msg = str(error.orig) if getattr(error, "orig", None) else str(error)
+        # Si la secuencia de IDs en PostgreSQL quedó desincronizada tras un seed manual
+        if "usuarios_pkey" in err_msg:
+            db.execute(
+                text(
+                    "SELECT setval(pg_get_serial_sequence('usuarios', 'id'), "
+                    "COALESCE((SELECT MAX(id) FROM usuarios), 1), true)"
+                )
+            )
+            db.commit()
+            nuevo = models.Usuario(
+                nombre=usuario.nombre.strip(),
+                email=email_limpio,
+                password_hash=get_password_hash(usuario.password),
+                telefono=usuario.telefono.strip() if usuario.telefono else None,
+                rol_id=2,
+            )
+            db.add(nuevo)
+            db.commit()
+            db.refresh(nuevo)
+            return nuevo
+
         raise HTTPException(
             409,
             "El correo ya está registrado.",

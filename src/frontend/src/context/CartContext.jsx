@@ -5,6 +5,21 @@ import { useAlert } from './AlertContext';
 
 const CartContext = createContext();
 
+const obtenerUsuarioToken = () => {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  try {
+    const base64Url = token.split(".")[1];
+    let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const payload = JSON.parse(window.atob(base64));
+    return payload?.sub || null;
+  } catch {
+    return null;
+  }
+};
+
 export function CartProvider({ children }) {
   const [carrito, setCarrito] = useState([]);
   const [montado, setMontado] = useState(false);
@@ -14,22 +29,56 @@ export function CartProvider({ children }) {
   const abrirCarrito = useCallback(() => setIsCartOpen(true), []);
   const cerrarCarrito = useCallback(() => setIsCartOpen(false), []);
 
-  // Cargar del localStorage en el cliente después de montar para sincronía perfecta con SSR
+  // Cargar y sincronizar el carrito según el usuario autenticado
   useEffect(() => {
-    try {
-      const carritoGuardado = localStorage.getItem('carrito-anglo');
-      if (carritoGuardado) {
-        setCarrito(JSON.parse(carritoGuardado));
+    const sincronizarSesion = () => {
+      try {
+        const usuarioActual = obtenerUsuarioToken();
+        const propietarioGuardado = localStorage.getItem("carrito-anglo-owner");
+
+        // Si se cerró sesión o cambió a un usuario distinto, vaciamos el carrito anterior
+        if (
+          !usuarioActual ||
+          (propietarioGuardado && propietarioGuardado !== usuarioActual)
+        ) {
+          localStorage.removeItem("carrito-anglo");
+          if (usuarioActual) {
+            localStorage.setItem("carrito-anglo-owner", usuarioActual);
+          } else {
+            localStorage.removeItem("carrito-anglo-owner");
+          }
+          setCarrito([]);
+          setMontado(true);
+          return;
+        }
+
+        localStorage.setItem("carrito-anglo-owner", usuarioActual);
+        const carritoGuardado = localStorage.getItem("carrito-anglo");
+        if (carritoGuardado) {
+          setCarrito(JSON.parse(carritoGuardado));
+        } else {
+          setCarrito([]);
+        }
+      } catch (error) {
+        console.error("Error cargando carrito:", error);
       }
-    } catch (error) {
-      console.error('Error cargando carrito:', error);
-    }
-    setMontado(true);
+      setMontado(true);
+    };
+
+    queueMicrotask(sincronizarSesion);
+    window.addEventListener("auth-change", sincronizarSesion);
+    return () => {
+      window.removeEventListener("auth-change", sincronizarSesion);
+    };
   }, []);
 
-  // Guardar en localStorage cada vez que cambia el carrito (solo tras el montaje inicial)
+  // Guardar en localStorage cada vez que cambia el carrito
   useEffect(() => {
     if (montado) {
+      const usuarioActual = obtenerUsuarioToken();
+      if (usuarioActual) {
+        localStorage.setItem("carrito-anglo-owner", usuarioActual);
+      }
       localStorage.setItem('carrito-anglo', JSON.stringify(carrito));
     }
   }, [carrito, montado]);
@@ -44,7 +93,16 @@ export function CartProvider({ children }) {
         return nuevoCarrito;
       }
       // Si es nuevo, lo añadimos
-      return [...prev, { ...producto, cantidad }];
+      const imagenFinal = producto.imagen_url || producto.imagen || "/panel-solar.png";
+      return [
+        ...prev,
+        {
+          ...producto,
+          imagen_url: imagenFinal,
+          imagen: imagenFinal,
+          cantidad,
+        },
+      ];
     });
     
     mostrarAlerta(`${cantidad} x ${producto.nombre} añadido al carrito`, 'success');

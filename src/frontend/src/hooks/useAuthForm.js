@@ -8,6 +8,7 @@ import {
   sanitizePassword 
 } from "@/src/utils/validations";
 import { authService } from "@/src/services/api";
+import { mensajeError } from "@/src/utils/solicitudes";
 
 export function useAuthForm(onSuccess) {
   const router = useRouter();
@@ -34,17 +35,23 @@ export function useAuthForm(onSuccess) {
     if (name === "password") newValue = sanitizePassword(value);
 
     setFormData((prev) => ({ ...prev, [name]: newValue }));
-    setErrors((prev) => ({ ...prev, [name]: validateAuthField(name, newValue, isLogin) }));
+    if (isLogin) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    } else {
+      setErrors((prev) => ({ ...prev, [name]: validateAuthField(name, newValue, false) }));
+    }
   };
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    setErrors((prev) => ({ ...prev, [name]: validateAuthField(name, value, isLogin) }));
+    if (!isLogin) {
+      setErrors((prev) => ({ ...prev, [name]: validateAuthField(name, value, false) }));
+    }
   };
 
   const getFieldClasses = (name) => {
     if (errors[name]) return "border-red-500 focus:border-red-500 focus:ring-red-500";
-    if (formData[name] && !errors[name]) return "border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500";
+    if (!isLogin && formData[name] && !errors[name]) return "border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500";
     return "border-gray-200 focus:border-[#00fc82] focus:ring-[#00fc82]";
   };
 
@@ -117,10 +124,24 @@ export function useAuthForm(onSuccess) {
     } catch (error) {
       if (error.response && error.response.status === 401) {
         setErrors({ ...newErrors, email: "Correo o contraseña incorrectos" });
-      } else if (error.response && error.response.status === 400) {
-        setStatusMessage({ text: "El correo ya está registrado.", type: "error" });
+      } else if (
+        error.response &&
+        (error.response.status === 400 || error.response.status === 409)
+      ) {
+        setStatusMessage({
+          text: mensajeError(error) || "El correo ya está registrado.",
+          type: "error",
+        });
+      } else if (error.response) {
+        setStatusMessage({
+          text: mensajeError(error) || "No se pudo completar el registro.",
+          type: "error",
+        });
       } else {
-        setStatusMessage({ text: "Error de conexión con el servidor.", type: "error" });
+        setStatusMessage({
+          text: "Error de conexión con el servidor.",
+          type: "error",
+        });
       }
     }
   };

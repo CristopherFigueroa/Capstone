@@ -18,7 +18,7 @@ function Footer() {
 
         <nav className="flex items-center gap-6">
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/angloelectric"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Perfil de Facebook de Anglo Electric"

@@ -29,7 +29,7 @@ class UsuarioCreate(BaseModel):
             raise ValueError('La contraseña debe contener al menos una letra minúscula')
         if not re.search(r'\d', v):
             raise ValueError('La contraseña debe contener al menos un número')
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>\-_\+=]', v):
+        if not re.search(r'[\W_]', v):
             raise ValueError('La contraseña debe contener al menos un carácter especial o símbolo')
         return v
 
@@ -37,9 +37,9 @@ class UsuarioResponse(BaseModel):
     id: int
     nombre: str
     email: str
-    telefono: Optional[str]
-    rol_id: int
-    creado_en: datetime
+    telefono: Optional[str] = None
+    rol_id: Optional[int] = 2
+    creado_en: Optional[datetime] = None
 
     class Config:
         from_attributes = True

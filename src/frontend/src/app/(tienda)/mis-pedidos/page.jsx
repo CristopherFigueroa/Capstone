@@ -156,20 +156,24 @@ export default function MisPedidosPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-black text-sm text-[#0F2547]">
-                          {p.id}
+                          ORD-{p.id}
                         </span>
-                        <span className={`text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full ${
-                          p.estado === "completado"
-                            ? "bg-emerald-100 text-emerald-800"
+                        <span className={`text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border ${
+                          p.estado === "entregado" || p.estado === "completado"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : p.estado === "enviado"
+                            ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                            : p.estado === "confirmado"
+                            ? "bg-sky-50 text-sky-800 border-sky-200"
                             : p.estado === "cancelado"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-amber-100 text-amber-800"
+                            ? "bg-red-50 text-red-800 border-red-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
                         }`}>
                           {p.estado}
                         </span>
                       </div>
                       <span className="text-[11px] text-gray-400 mt-1 block">
-                        Fecha: {p.fecha} · {p.cantidad_items} ítem(s)
+                        Fecha: {p.fecha ? p.fecha.slice(0, 10) : "-"} · {p.cantidad_items} ítem(s)
                       </span>
                     </div>
 

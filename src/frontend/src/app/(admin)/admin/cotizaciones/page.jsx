@@ -5,10 +5,7 @@ import {
   FiFileText, 
   FiSearch, 
   FiRefreshCw, 
-  FiCheckCircle, 
-  FiClock, 
-  FiMapPin, 
-  FiZap 
+  FiCheckCircle
 } from "react-icons/fi";
 import { cotizacionService } from "@/src/services/api";
 import { formatearMoneda } from "@/src/utils/formatters";
@@ -40,8 +37,27 @@ export default function AdminCotizacionesPage() {
   }, []);
 
   useEffect(() => {
-    cargarCotizaciones();
-  }, [cargarCotizaciones]);
+    let activo = true;
+    cotizacionService
+      .getAll()
+      .then((data) => {
+        if (activo && Array.isArray(data)) {
+          setCotizaciones(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error cargando cotizaciones:", err);
+      })
+      .finally(() => {
+        if (activo) {
+          setCargando(false);
+          setActualizando(false);
+        }
+      });
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   const handleCambiarEstado = async (id, nuevoEstado) => {
     try {
@@ -144,7 +160,7 @@ export default function AdminCotizacionesPage() {
 
         {/* Tabla */}
         <div className="overflow-x-auto rounded-xl border border-gray-100">
-          <table className="table w-full min-w-[650px] text-left text-xs">
+          <table className="table w-full min-w-162.5 text-left text-xs">
             <thead>
               <tr className="bg-gray-50/70 border-b border-gray-100 text-gray-600 uppercase text-[10px] tracking-wider font-extrabold">
                 <th className="py-3 px-4">ID Cotización</th>
@@ -183,16 +199,10 @@ export default function AdminCotizacionesPage() {
                       COT-{c.id}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-gray-800">
-                      <div className="flex items-center gap-1.5">
-                        <FiMapPin className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{c.comuna || "No especificada"}</span>
-                      </div>
+                      {c.comuna || "No especificada"}
                     </td>
                     <td className="py-3.5 px-4 text-gray-700 font-semibold">
-                      <div className="flex items-center gap-1.5">
-                        <FiZap className="w-3.5 h-3.5 text-amber-500" />
-                        <span>{c.consumo_kwh_mensual ? `${c.consumo_kwh_mensual} kWh/mes` : "No indicado"}</span>
-                      </div>
+                      {c.consumo_kwh_mensual ? `${c.consumo_kwh_mensual} kWh/mes` : "No indicado"}
                     </td>
                     <td className="py-3.5 px-4 text-gray-700 font-bold">
                       {c.presupuesto_estimado ? formatearMoneda(c.presupuesto_estimado) : "A convenir"}

@@ -13,6 +13,8 @@ services:
       DATABASE_URL: "${DATABASE_URL:-postgresql://neondb_owner:npg_dpW0xoNCE3KV@ep-aged-wave-b67ipotj-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require}"
       SECRET_KEY: "${SECRET_KEY:-anglo-electric-capstone-clave-de-desarrollo-2026}"
       CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}"
+      SMTP_USER: "${SMTP_USER:-angloelectric.chile@gmail.com}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
     restart: always
 
   frontend:

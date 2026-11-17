@@ -1,10 +1,15 @@
-from fastapi import APIRouter
+import re
+from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
 from transbank.webpay.webpay_plus.transaction import Transaction
 from transbank.common.options import WebpayOptions
 from transbank.common.integration_commerce_codes import IntegrationCommerceCodes
 from transbank.common.integration_api_keys import IntegrationApiKeys
 from transbank.common.integration_type import IntegrationType
+
+import models
+from core.database import get_db
 
 router = APIRouter(prefix="/pagos", tags=["Pagos"])
 
@@ -35,23 +40,34 @@ def crear_pago(monto: int, orden_compra: str, session_id: str = "sesion_1"):
     return {"url": respuesta["url"], "token": respuesta["token"]}
 
 @router.get("/confirmar")
-def confirmar_pago(token_ws: str):
+def confirmar_pago(
+    token_ws: str | None = None,
+    db: Session = Depends(get_db),
+):
+    if not token_ws:
+        return RedirectResponse(url="http://localhost:3000/pago/fallo", status_code=303)
+
     # Transbank envía el token_ws en la URL de retorno
     tx = Transaction(options=opciones)
-    
+
     # Confirmamos la transacción con el token
     respuesta = tx.commit(token=token_ws)
-    
+
     # Validamos si el pago fue exitoso
-    if respuesta["status"] == "AUTHORIZED":
-        orden_compra = respuesta["buy_order"]
-        
+    if respuesta.get("status") == "AUTHORIZED":
+        orden_compra = str(respuesta.get("buy_order", ""))
+
+        # Si buy_order viene como ORD-12 o pedido_12, actualizamos el pedido a 'confirmado'
+        coincidencia = re.search(r"(\d+)$", orden_compra)
+        if coincidencia:
+            pedido_id = int(coincidencia.group(1))
+            pedido = db.get(models.Pedido, pedido_id)
+            if pedido and pedido.estado == "pendiente":
+                pedido.estado = "confirmado"
+                db.commit()
+
         # Redirección automática al frontend de Next.js con la orden aprobada
         frontend_url = f"http://localhost:3000/pago/exito?orden={orden_compra}"
         return RedirectResponse(url=frontend_url, status_code=303)
     else:
-        # Si el pago es rechazado, podemos redirigir a una vista de error o fallo
-        return {
-            "mensaje": "Pago Rechazado", 
-            "estado": respuesta.get("status", "Desconocido")
-        }
+        return RedirectResponse(url="http://localhost:3000/pago/fallo", status_code=303)

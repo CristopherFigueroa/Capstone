@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useCart } from "@/src/context/CartContext";
 import { 
   FiCheckCircle, 
   FiHome, 
@@ -14,7 +15,12 @@ import {
 
 function ExitoContent() {
   const searchParams = useSearchParams();
+  const { vaciarCarrito } = useCart();
   const ordenParam = searchParams.get("orden") || searchParams.get("id");
+
+  useEffect(() => {
+    vaciarCarrito();
+  }, [vaciarCarrito]);
 
   const numeroOrden = useMemo(() => {
     if (ordenParam) {

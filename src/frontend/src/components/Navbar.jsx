@@ -10,10 +10,8 @@ import { useCart } from "@/src/context/CartContext";
 import CartSidebar from "./CartSidebar";
 import AuthModal from "./AuthModal";
 
-const navLinkClass =
-  "text-[#ffffff] hover:text-[#00fc82] hover:bg-transparent focus:bg-transparent active:bg-transparent transition-colors duration-200";
 const navIconClass =
-  "text-[#ffffff] hover:text-[#00fc82] hover:bg-transparent focus:bg-transparent active:bg-transparent transition-colors duration-200 relative cursor-pointer";
+  "text-white hover:text-[#00fc82] hover:bg-transparent focus:bg-transparent active:bg-transparent transition-colors duration-200 relative cursor-pointer";
 
 function Navbar() {
   const router = useRouter();

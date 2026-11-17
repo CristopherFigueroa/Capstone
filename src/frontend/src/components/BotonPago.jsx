@@ -22,7 +22,7 @@ export default function BotonPago({ monto = 15000, ordenCompra = "orden_001" }) 
       if (data.token && data.url) {
         setTxData(data);
         
-        // Le damos un pequeño respiro a React para renderizar el form antes de enviarlo
+        //  renderizar el form antes de enviarlo
         setTimeout(() => {
           if (formRef.current) {
             formRef.current.submit();

@@ -111,7 +111,21 @@ export const authService = {
   register: async (userData) => {
     const response = await api.post('/usuarios/', userData);
     return response.data;
-  }
+  },
+
+  solicitarRecuperacion: async (email) => {
+    const response = await api.post('/recuperar-password/solicitar', { email });
+    return response.data;
+  },
+
+  confirmarRecuperacion: async ({ email, codigo, nueva_password }) => {
+    const response = await api.post('/recuperar-password/confirmar', {
+      email,
+      codigo,
+      nueva_password,
+    });
+    return response.data;
+  },
 };
 
 // --- SERVICIOS DE COTIZACIONES ---
@@ -157,7 +171,14 @@ export const orderService = {
   create: async (pedidoData) => {
     const response = await api.post('/pedidos/', pedidoData);
     return response.data;
-  }
+  },
+
+  updateEstado: async (pedidoId, nuevoEstado) => {
+    const response = await api.put(`/pedidos/${pedidoId}`, null, {
+      params: { nuevo_estado: nuevoEstado },
+    });
+    return response.data;
+  },
 };
 
 // --- SERVICIOS DE USUARIO Y PERFIL ---
@@ -179,5 +200,39 @@ export const iaService = {
     const response = await api.post('/ia/chat', { message, history });
     return response.data;
   }
+};
 
+// --- SERVICIOS DE AGENDA TÉCNICA ---
+export const agendaService = {
+  getDisponibles: async () => {
+    const response = await api.get('/agenda/disponibles');
+    return response.data;
+  },
+
+  getAll: async () => {
+    const response = await api.get('/agenda/');
+    return response.data;
+  },
+
+  getMisCitas: async () => {
+    const response = await api.get('/agenda/mis-citas');
+    return response.data;
+  },
+
+  crearTurno: async (inicioIso) => {
+    const response = await api.post('/agenda/turnos', { inicio: inicioIso });
+    return response.data;
+  },
+
+  cancelar: async (citaId) => {
+    const response = await api.put(`/agenda/${citaId}/cancelar`);
+    return response.data;
+  },
+
+  reprogramar: async (citaId, turnoId) => {
+    const response = await api.put(`/agenda/${citaId}/reprogramar`, {
+      turno_id: Number(turnoId),
+    });
+    return response.data;
+  },
 };

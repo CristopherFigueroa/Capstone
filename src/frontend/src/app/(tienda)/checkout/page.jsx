@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   FiShoppingBag, 
-  FiCheckCircle, 
   FiTruck, 
   FiFileText, 
   FiCreditCard, 
@@ -18,6 +18,7 @@ import { useCart } from "@/src/context/CartContext";
 import { orderService, userService } from "@/src/services/api";
 import { formatearMoneda } from "@/src/utils/formatters";
 import { sanitizeName, sanitizePhone, sanitizeSearch } from "@/src/utils/validations";
+import { mensajeError } from "@/src/utils/solicitudes";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -52,7 +53,6 @@ export default function CheckoutPage() {
 
   // Método de pago
   const [metodoPago, setMetodoPago] = useState("webpay"); // 'webpay' | 'transferencia'
-  const [usuarioId, setUsuarioId] = useState(null);
 
   // Pre-cargar datos del usuario si está autenticado
   useEffect(() => {
@@ -64,7 +64,6 @@ export default function CheckoutPage() {
       try {
         const perfil = await userService.getProfile();
         if (activo && perfil) {
-          setUsuarioId(perfil.id);
           setDatosEntrega((prev) => ({
             ...prev,
             nombre: perfil.nombre || "",
@@ -156,7 +155,14 @@ export default function CheckoutPage() {
 
     } catch (err) {
       console.error("Error al procesar pedido en checkout:", err);
-      setErrorEnvio("Hubo un problema al procesar el pedido o contactar al banco. Por favor, intenta de nuevo.");
+      const detalle =
+        err?.response || err?.request
+          ? mensajeError(err)
+          : err?.message;
+      setErrorEnvio(
+        detalle ||
+          "Hubo un problema al procesar el pedido o contactar al banco. Por favor, intenta de nuevo."
+      );
       setProcesando(false);
     }
   };
@@ -484,21 +490,33 @@ export default function CheckoutPage() {
 
               {/* Lista de productos */}
               <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto pr-1 space-y-3">
-                {carrito.map((item) => (
-                  <div key={item.id} className="pt-3 flex justify-between items-center text-xs">
-                    <div className="pr-2">
-                      <span className="font-bold text-gray-800 block line-clamp-1">
-                        {item.nombre}
-                      </span>
-                      <span className="text-[11px] text-gray-400">
-                        {item.cantidad} un. x {formatearMoneda(item.precio)}
+                {carrito.map((item) => {
+                  const imagenSrc = item.imagen_url || item.imagen || "/panel-solar.png";
+                  return (
+                    <div key={item.id} className="pt-3 flex justify-between items-center gap-3 text-xs">
+                      <div className="w-12 h-12 rounded-xl bg-slate-50 border border-gray-100 relative shrink-0 overflow-hidden">
+                        <Image
+                          src={imagenSrc}
+                          alt={item.nombre}
+                          fill
+                          sizes="48px"
+                          className="object-contain p-1.5"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0 pr-2">
+                        <span className="font-bold text-gray-800 block line-clamp-1">
+                          {item.nombre}
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          {item.cantidad} un. x {formatearMoneda(item.precio)}
+                        </span>
+                      </div>
+                      <span className="font-extrabold text-[#0F2547] whitespace-nowrap">
+                        {formatearMoneda(item.precio * item.cantidad)}
                       </span>
                     </div>
-                    <span className="font-extrabold text-[#0F2547] whitespace-nowrap">
-                      {formatearMoneda(item.precio * item.cantidad)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Subtotales */}
